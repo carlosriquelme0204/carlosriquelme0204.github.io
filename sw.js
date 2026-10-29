@@ -1,6 +1,6 @@
 // Faz o jogo funcionar offline depois de abrir uma vez.
 // Ao atualizar o jogo, mude a versão abaixo (v1 → v2...) pra forçar o download dos arquivos novos.
-const CACHE='skullink-v1';
+const CACHE='skullink-v10';
 const CORE=['./','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png','./icon-maskable-512.png',
   'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>Promise.all(CORE.map(u=>c.add(u).catch(()=>{})))).then(()=>self.skipWaiting()));});
