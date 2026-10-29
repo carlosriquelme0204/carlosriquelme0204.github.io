@@ -522,7 +522,7 @@
     <div id="saveBox"></div>
     <button id="updBtn">UPDATE</button>
     <button id="sioStart">importar / exportar save</button>
-    <div id="appVer" style="margin-top:8px;font-size:11px;opacity:.55">versão 2026.10.29-2319</div>
+    <div id="appVer" style="margin-top:8px;font-size:11px;opacity:.55">versão 2026.10.29-2349</div>
   </div>
   <div id="how">PC: WASD · Shift corre · Espaço pula · Q chute · E chute forte · F ultimate · mouse gira a câmera &nbsp;|&nbsp; Celular: joystick na esquerda, botões na direita</div>
   <div class="grain"></div>
@@ -714,6 +714,8 @@
     <h3>UPDATE</h3>
     <div class="updList">
       <section><h4>🆕 ESTA VERSÃO</h4><ul>
+        <li><b>Correção:</b> o jogo travava depois de um tempo lutando contra o boss secreto.</li>
+        <li><b>???:</b> dizem que o gatinho do telhado tem uma dona... diferente. Não leve ele pra longe demais.</li>
         <li><b>Nova melhoria PULO:</b> cada nível dá +1 pulo extra no ar (até 5). E agora dá pra subir de nível mais rápido.</li>
         <li><b>Correções:</b> com a trava do personagem, todo ataque sai pra frente; Sombra do Beco funciona com todas as armas; elementos Vento e Terra voltaram a funcionar.</li>
         <li><b>Lojas repaginadas:</b> o Arsenal virou uma fachada industrial blindada e o Brechó uma boutique de tijolinho com araras na calçada.</li>
@@ -2112,7 +2114,7 @@ function provoke(){if(!ev||ev.type!=='fight'||ev.provoked)return;ev.provoked=tru
 function endEvent(reward,delay=4){if(reward)reward=Math.round(reward*(1+0.06*(lvl-1)));const xpG=reward?Math.round(reward*2):0;if(reward&&SW())reward=Math.round(reward*WPN[SW()].mult);ev.stage='done';ev.doneT=t+delay;objective('');if(reward)addCoins(reward);
   const e=$('mDone');e.innerHTML=reward?`MISSÃO COMPLETA<small>${EVN[ev.type]} · +${reward} ☠ · +${xpG} XP</small>`:`MISSÃO FALHOU<small>${EVN[ev.type]}</small>`;
   e.classList.toggle('fail',!reward);e.classList.remove('go');void e.offsetWidth;e.classList.add('go');if(xpG)setTimeout(()=>gainXP(xpG),900);}
-function clearEvent(){if(!ev)return;if(ev.props)ev.props.forEach(o=>{if(o.parent)o.parent.remove(o);});if(ev.boss)bossEffectsClear(ev.boss);$('bossBar').classList.remove('on');if(state==='bcine'){state='normal';document.body.classList.remove('cine');}if(ev.bank)closeVault(ev.bank);for(const n of ev.npcs){if(n.m.g.parent)n.m.g.parent.remove(n.m.g);}ev=null;evNext=3+Math.random()*4;objective('');}
+function clearEvent(){if(!ev)return;if(ev.boss&&!ev.secret)bossEffectsClear(ev.boss);if(ev.secret){secProj.forEach(s2=>scene.remove(s2.m));secProj.length=0;if(ev.boss)secClear(ev.boss);}if(ev.props)ev.props.forEach(o=>{if(o.parent)o.parent.remove(o);});if(ev.boss)bossEffectsClear(ev.boss);$('bossBar').classList.remove('on');if(state==='bcine'){state='normal';document.body.classList.remove('cine');}if(ev.bank)closeVault(ev.bank);for(const n of ev.npcs){if(n.m.g.parent)n.m.g.parent.remove(n.m.g);}ev=null;evNext=3+Math.random()*4;objective('');}
 function hurtPlayer(dmg,fx,fz){
   if(playerDead||state==='ult'||state==='dead'||state==='bcine')return;
   if(t<invulnT){spark(player.position.x,player.position.y+2,player.position.z,3,0x9a9aa0,3);return;}
@@ -2168,7 +2170,7 @@ function eventsUpdate(){
       continue;}
     const p=n.m.g.position,dx=P.x-p.x,dz=P.z-p.z,dist=Math.hypot(dx,dz);
     npcStatus(n);
-    if(n.boss){if(n.atkT>0)n.atkT-=dt;if(n.state==='boss')bossAI(n,P);}
+    if(n.boss){if(n.atkT>0)n.atkT-=dt;if(n.state==='boss')(n.secret?secretAI(n,P):bossAI(n,P));}
     else if(n.stun>0){n.stun-=dt;n.spd=0;}
     else if(n.state==='flee'){
       const away=Math.atan2(-dx,-dz)+Math.sin(t*0.7+n.phase)*0.6;n.face=away;n.spd=9.5*(n.wet>0?0.5:1);
@@ -2200,7 +2202,7 @@ function eventsUpdate(){
     }else if(n.worried){n.spd=0;n.face=Math.sin(t*0.8+n.phase)*1.6;if(ev.stage==='active'&&Math.random()<dt*0.2)say(n.m.head,['Cadê ela?!','Filha!!','Alguém viu uma menininha?'][Math.random()*3|0],1.8);
     }else if(n.state==='idle'){n.spd=0;if(ev.stage==='active'&&n.role!=='bandit')n.face=Math.atan2(dx,dz);}
     if(!n.noPhys){if(n.state!=='flee'||n.stun>0)npcPhys(n);else if(n.air)npcPhys(n);}
-    npcAnim(n);if(n.boss)bossPose(n);
+    npcAnim(n);if(n.boss)(n.secret?secretPose(n):bossPose(n));
   }
   if(ev.stage!=='active')return;
   if(NEWEV_UPD[ev.type]){NEWEV_UPD[ev.type](P);if(!ev||ev.stage!=='active')return;}
@@ -2215,7 +2217,8 @@ function eventsUpdate(){
   // ---- objetivos ----
   if(ev.type==='purse'&&ev.ban.state==='down'){ev.vic.panic=false;ev.vic.wave=true;
     const b=ev.ban.m.g.position;ev.pos.copy(ev.vic.m.g.position);say(ev.vic.m.head,'Minha bolsa! Valeu, caveira!',3);endEvent(25);}
-  if(ev.type==='cat'){
+  if(ev.type==='cat'&&(ev.secret||(ev.carry&&Math.hypot(ev.lady.m.g.position.x-P.x,ev.lady.m.g.position.z-P.z)>85))){secretUpdate(P);if(!ev||ev.stage!=='active')return;}
+  if(ev.type==='cat'&&!ev.secret){
     const c=ev.cat.m.g;
     if(!ev.carry){const cp=c.getWorldPosition(new THREE.Vector3());if(P.distanceTo(cp)<2.6){ev.carry=true;chest.add(c);c.position.set(0,-0.15,0.62);c.rotation.set(0,0,0);
       say(c,'miau ♡',1.5,1.6);objective('Leve o gato pra senhorinha');}}
@@ -2915,7 +2918,7 @@ function bossCamera(){const B=ev&&ev.boss;if(!B)return;const bp=B.m.g.position,P
   camera.position.set(P.x+Math.sin(yaw)*6,P.y+2.5,P.z+Math.cos(yaw)*6);camera.lookAt(bp.x,Math.max(4,bp.y+4),bp.z);camera.fov=50;camera.updateProjectionMatrix();}
 function lairUpdate(P){
   if(ev.phase==='mobs'&&ev.mobs.every(n=>n.state==='down')){ev.phase='cine';bossCam=0;const L=ev.L;ev.boss=mkBoss(L.cx,L.cz-2);ev.npcs.push(ev.boss);
-    state='bcine';curSpeed=0;pushX=pushZ=0;atk=0;dance=0;vel.set(0,0,0);unlockSilent();
+    state='bcine';curSpeed=0;pushX=pushZ=0;atk=0;dance=0;vel.set(0,0,0);
     $('cineTxt').innerHTML='MARRETA<small>o rei do covil</small>';document.body.classList.add('cine');objective('');}
   if(ev.phase==='cine'){bossCam+=dt;const b=ev.boss,p=b.m.g.position,T=bossCam;b.face=Math.atan2(P.x-p.x,P.z-p.z);
     if(T<1.3){const k=T/1.3;p.y=40*(1-k*k);b.m.root.rotation.x=0;}
@@ -3134,6 +3137,95 @@ $('tabWeapons').addEventListener('click',e=>{const b=e.target.closest('.wcard');
   if(b.dataset.k==='vis'){equipped=id==='none'?null:id;applyWeapon();}
   else statW=id==='same'?'same':id==='none'?null:id;
   writeSave(false);renderWeapons();});
+// ================= BOSS SECRETO: VÓ NOCTURNA =================
+const SECM={dress:nm(0x1a0f22),wing:new THREE.MeshToonMaterial({color:0x0c0a10,side:THREE.DoubleSide}),horn:new THREE.MeshStandardMaterial({color:0x111114,metalness:0.4,roughness:0.3,flatShading:true}),
+  eye:new THREE.MeshBasicMaterial({color:0xb04aff}),portal:new THREE.MeshBasicMaterial({color:0xb04aff,transparent:true,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false}),
+  yarn:nm(0xc4161c),line:nm(0x7a0a10),tele:new THREE.MeshBasicMaterial({color:0xb04aff,transparent:true,opacity:0.4,depthWrite:false})};
+const PORTALT=(()=>{const c=document.createElement('canvas');c.width=c.height=256;const x=c.getContext('2d');const gr=x.createRadialGradient(128,128,10,128,128,128);
+  gr.addColorStop(0,'rgba(255,255,255,1)');gr.addColorStop(0.3,'rgba(190,90,255,.9)');gr.addColorStop(0.75,'rgba(80,0,140,.6)');gr.addColorStop(1,'rgba(0,0,0,0)');x.fillStyle=gr;x.fillRect(0,0,256,256);
+  x.strokeStyle='rgba(255,255,255,.55)';x.lineWidth=5;for(let k=0;k<5;k++){x.beginPath();for(let a=0;a<Math.PI*4;a+=0.1){const r=8+a*9;const xx=128+Math.cos(a+k*1.25)*r,yy=128+Math.sin(a+k*1.25)*r;a?x.lineTo(xx,yy):x.moveTo(xx,yy);}x.stroke();}
+  return new THREE.CanvasTexture(c);})();
+function wingMesh(){const sh=new THREE.Shape();sh.moveTo(0,0);sh.lineTo(0.6,0.9);sh.lineTo(2.2,1.6);sh.lineTo(3.6,1.1);sh.quadraticCurveTo(3.1,0.4,3.3,-0.3);sh.quadraticCurveTo(2.7,0,2.3,-0.6);
+  sh.quadraticCurveTo(1.8,-0.1,1.3,-0.7);sh.quadraticCurveTo(0.9,-0.1,0,-0.3);sh.lineTo(0,0);const m=new THREE.Mesh(new THREE.ShapeGeometry(sh),SECM.wing);m.castShadow=true;
+  for(const [a,b] of[[[0,0],[2.2,1.6]],[[0.6,0.9],[3.3,-0.3]],[[0.6,0.9],[2.3,-0.6]],[[0.6,0.9],[1.3,-0.7]]]){const dx=b[0]-a[0],dy=b[1]-a[1],L=Math.hypot(dx,dy);const bn=new THREE.Mesh(CYL,SECM.horn);bn.scale.set(0.04,L,0.04);bn.position.set((a[0]+b[0])/2,(a[1]+b[1])/2,0.02);bn.rotation.z=Math.atan2(dy,dx)-Math.PI/2;m.add(bn);}
+  return m;}
+function mkSecret(x,z){
+  const m=makeHuman({shirt:nm(0x2a1430),pants:SECM.dress,dress:SECM.dress,skin:nm(0xcfc4c8),extra:(M,h,t,a)=>{HAT.bun(M,h);
+    for(const sd of[-1,1]){const hr=new THREE.Group();hr.position.set(sd*0.42,0.55,-0.05);hr.rotation.set(-0.7,0,sd*0.35);h.add(hr);
+      const c1=new THREE.Mesh(CONE,SECM.horn);c1.scale.set(0.16,1.1,0.16);c1.position.y=0.5;hr.add(c1);const h2=new THREE.Group();h2.position.y=0.95;h2.rotation.x=-0.8;hr.add(h2);const c2=new THREE.Mesh(CONE,SECM.horn);c2.scale.set(0.09,1,0.09);c2.position.y=0.45;h2.add(c2);}
+    for(const ex of[-0.27,0.27]){const e=new THREE.Mesh(BOX,SECM.eye);e.position.set(ex,0.04,0.79);e.scale.set(0.18,0.07,0.03);h.add(e);}
+    const cane=new THREE.Group();cane.position.set(0,-0.75,0.1);a[1].add(cane);const st=new THREE.Mesh(CYL,SECM.horn);st.scale.set(0.05,2.2,0.05);st.position.y=-0.9;cane.add(st);
+    const sk=new THREE.Mesh(SPH,NM.white);sk.scale.setScalar(0.16);sk.position.y=0.15;cane.add(sk);M.cane=cane;
+    const wings=[-1,1].map(sd=>{const piv=new THREE.Group();piv.position.set(sd*0.18,0.65,-0.35);t.add(piv);const w=wingMesh();w.scale.set(sd,1,1);piv.add(w);return piv;});M.wings=wings;}});
+  m.g.scale.setScalar(3.1);m.g.position.set(x,40,z);
+  const n=makeNPC('boss',m,Math.round(2600*(1+0.22*(lvl-1))));n.boss=true;n.secret=true;n.name='VÓ NOCTURNA';n.state='bossIdle';n.hittable=false;n.noPhys=true;n.bCD=2;n.sAtk=null;return n;}
+const secProj=[];const YARNT=new THREE.TorusGeometry(0.76,0.04,4,16);
+function secClear(n){(n.teles||[]).forEach(o=>{scene.remove(o);if(o.material&&o.material.dispose)o.material.dispose();});n.teles=[];}
+function secretAI(n,P){
+  const p=n.m.g.position,dx=P.x-p.x,dz=P.z-p.z,dist=Math.hypot(dx,dz);if(n.state==='down'){secClear(n);return;}
+  n.face=Math.atan2(dx,dz);
+  if(!n.sAtk){n.bCD-=dt;if(dist>9){n.spd=ease(n.spd,2.6*(n.wet>0?0.5:1),3);p.x+=Math.sin(n.face)*n.spd*dt;p.z+=Math.cos(n.face)*n.spd*dt;collide(p,nearSolids(p.x,p.z));}else n.spd=ease(n.spd,0,6);
+    if(n.bCD<=0){n.sT=0;n.done=false;n.teles=[];const pick=dist<8?'gust':['yarn','cane','cats','gust'][Math.random()*4|0];n.sAtk=pick;
+      say(n.m.head,{yarn:'Novelo pra você, querido!',cane:'Respeita os mais velhos!',cats:'Meus bebês, ataquem!',gust:'SAI DE PERTO!'}[pick],1.6,1.4);}
+    return;}
+  n.sT+=dt;const T=n.sT;n.spd=0;
+  if(n.sAtk==='yarn'){n.raise=T<0.6?1:0;
+    if(T>0.6&&!n.done){n.done=true;for(const o of[-0.35,0,0.35]){const a=n.face+o,b=new THREE.Group();const s1=new THREE.Mesh(SPH,SECM.yarn);s1.scale.setScalar(0.75);b.add(s1);
+        for(let i=0;i<3;i++){const tr=new THREE.Mesh(YARNT,SECM.line);tr.rotation.set(i,i*0.7,0);b.add(tr);}b.position.set(p.x+Math.sin(a)*3,0.8,p.z+Math.cos(a)*3);scene.add(b);
+        secProj.push({m:b,vx:Math.sin(a)*13,vz:Math.cos(a)*13,l:3.2,dmg:22,r:1.5,roll:true});}}
+    if(T>1.4){n.sAtk=null;n.bCD=1.6;}}
+  else if(n.sAtk==='cane'){n.raise=T<0.9?1:0;
+    if(!n.line){n.line=[];for(let i=0;i<8;i++){const q=new THREE.Vector3(p.x+Math.sin(n.face)*(4+i*2.6),0.08,p.z+Math.cos(n.face)*(4+i*2.6));n.line.push({q,t0:0.4+i*0.11,hit:false});}}
+    for(const L of n.line){if(T>L.t0&&!L.mk){L.mk=new THREE.Mesh(DISCG,SECM.tele.clone());L.mk.position.copy(L.q);L.mk.scale.setScalar(1.7);scene.add(L.mk);n.teles.push(L.mk);}
+      if(L.mk)L.mk.material.opacity=0.25+0.3*Math.sin(T*25);
+      if(T>L.t0+0.75&&!L.hit){L.hit=true;scene.remove(L.mk);emit('flame',L.q.x,0.6,L.q.z,10,{spd:2,up:6,life:0.6,size:1.4});rockBurst(L.q.x,0.3,L.q.z,4,5);
+        const sp=new THREE.Mesh(CONE,SECM.horn);sp.scale.set(0.5,2.6,0.5);sp.position.set(L.q.x,1.2,L.q.z);scene.add(sp);setTimeout(()=>scene.remove(sp),700);shake=Math.max(shake,0.25);
+        if(Math.hypot(P.x-L.q.x,P.z-L.q.z)<1.8&&P.y<2.2)hurtPlayer(26,(P.x-L.q.x)||1,(P.z-L.q.z));}}
+    if(T>2.2){n.line=null;secClear(n);n.sAtk=null;n.bCD=1.5;}}
+  else if(n.sAtk==='cats'){n.raise=T<1.2?1:0;
+    if(!n.drops){n.drops=[];for(let i=0;i<7;i++){const a=Math.random()*Math.PI*2,r=i?2+Math.random()*7:0;n.drops.push({q:new THREE.Vector3(P.x+Math.cos(a)*r,0.08,P.z+Math.sin(a)*r),hit:false});}
+      n.drops.forEach(d=>{d.mk=new THREE.Mesh(DISCG,BOSSM.tele.clone());d.mk.position.copy(d.q);d.mk.scale.setScalar(2.1);scene.add(d.mk);n.teles.push(d.mk);});}
+    n.drops.forEach(d=>{d.mk.material.opacity=0.2+0.3*Math.abs(Math.sin(T*12));
+      if(T>1.0&&!d.cat){d.cat=makeCat();d.cat.g.scale.setScalar(1.9);d.cat.meshes.forEach(x=>x.material=NM.black);d.cat.g.position.set(d.q.x,30,d.q.z);}
+      if(d.cat&&!d.hit){const k=THREE.MathUtils.clamp((T-1.0)/0.4,0,1);d.cat.g.position.y=30*(1-k*k);d.cat.g.rotation.y+=dt*10;
+        if(k>=1){d.hit=true;scene.remove(d.mk);shake=Math.max(shake,0.2);emit('dust',d.q.x,0.4,d.q.z,8,{spd:3,up:1,life:0.6,size:1.2,grow:2});ringFx(d.q.x,0.15,d.q.z,2.5,DM.ring2,0.3);
+          if(Math.hypot(P.x-d.q.x,P.z-d.q.z)<2.2&&P.y<2.2)hurtPlayer(24,(P.x-d.q.x)||1,(P.z-d.q.z));const cg=d.cat.g;setTimeout(()=>{scene.remove(cg);},900);say(cg,'MIAU!',0.8,1.6);}}});
+    if(T>2.3){n.drops=null;secClear(n);n.sAtk=null;n.bCD=1.8;}}
+  else if(n.sAtk==='gust'){n.spread=T<1.1?T/1.1:1;
+    if(!n.gz&&!n.done){n.gz=new THREE.Mesh(DISCG,BOSSM.tele.clone());n.gz.position.set(p.x,0.07,p.z);n.gz.scale.setScalar(10);scene.add(n.gz);n.teles.push(n.gz);}
+    if(n.gz)n.gz.material.opacity=0.15+0.25*Math.abs(Math.sin(T*14));
+    if(T>1.1&&!n.done){n.done=true;secClear(n);n.gz=null;shake=0.6;ringFx(p.x,0.3,p.z,12,DM.ringG,0.6);emit('wind',p.x,2,p.z,30,{up:2,life:0.8,size:1.4,swirl:{cx:p.x,cz:p.z,w:8,r:3}});
+      if(dist<10&&P.y<4){hurtPlayer(18,dx/(dist||1),dz/(dist||1));pushX+=dx/(dist||1)*34;pushZ+=dz/(dist||1)*34;vel.y=7;onGround=false;}}
+    if(T>1.8){n.spread=0;secClear(n);n.gz=null;n.sAtk=null;n.bCD=1.4;}}
+}
+function secretPose(n){const m=n.m;if(m.wings){const sp=n.spread||0,fl=Math.sin(t*2.2)*0.18;m.wings.forEach((w,i)=>{w.rotation.y=(i?1:-1)*(-0.9+sp*0.9+fl);w.rotation.z=(i?1:-1)*0.15;});}
+  if(n.raise&&m.arms)m.arms[1].rotation.x=-2.8;}
+function secretUpdate(P){
+  if(!ev.secret){ev.secret=true;ev.phase='cine';bossCam=0;const f=player.rotation.y;const bx=P.x+Math.sin(f)*16,bz=P.z+Math.cos(f)*16;
+    const b=mkSecret(bx,bz);ev.boss=b;ev.npcs.push(b);ev.props=ev.props||[];
+    const pg=new THREE.Group();pg.position.set(bx,42,bz);const disc=new THREE.Mesh(new THREE.CircleGeometry(9,40),new THREE.MeshBasicMaterial({map:PORTALT,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}));
+    disc.rotation.x=Math.PI/2;pg.add(disc);const rg=new THREE.Mesh(new THREE.TorusGeometry(9,0.5,6,40),SECM.portal);rg.rotation.x=Math.PI/2;pg.add(rg);pg.scale.setScalar(0.01);scene.add(pg);ev.props.push(pg);ev.portal=pg;
+    state='bcine';curSpeed=0;pushX=pushZ=0;atk=0;dance=0;vel.set(0,0,0);objective('');
+    $('cineTxt').innerHTML='VÓ NOCTURNA<small>a verdadeira dona do gato</small>';document.body.classList.add('cine');say(ev.cat.m.g,'MIAU?!',1.5,1.6);}
+  const b=ev.boss,bp=b.m.g.position;
+  if(ev.portal){ev.portal.rotation.y+=dt*1.5;const sc=ev.phase==='cine'?Math.min(1,bossCam/1.2):Math.max(0.35,ev.portal.scale.x-dt*0.1);ev.portal.scale.setScalar(sc);}
+  if(ev.phase==='cine'){bossCam+=dt;const T=bossCam;b.face=Math.atan2(P.x-bp.x,P.z-bp.z);b.spread=1;
+    if(T<1.3){bp.y=40;if(T>0.2&&Math.random()<dt*20)emit('wind',bp.x+(Math.random()-0.5)*14,40,bp.z+(Math.random()-0.5)*14,1,{up:-2,life:1,size:2});}
+    else if(T<3.4){const k=(T-1.3)/2.1;bp.y=40*(1-k*k*(3-2*k));if(Math.random()<dt*15)emit('flame',bp.x,bp.y+5,bp.z,1,{spd:1,up:-1,life:0.8,size:1.6});}
+    else if(!ev.landed){ev.landed=true;bp.y=0;shake=1.2;hitStop=0.15;flashW();ringFx(bp.x,0.15,bp.z,22,DM.ringG,1);ringFx(bp.x,0.2,bp.z,16,DM.ring2,1.2);rockBurst(bp.x,0.4,bp.z,26,12);
+      emit('dust',bp.x,0.6,bp.z,30,{spd:8,up:2,life:1.3,size:2.8,grow:2.5});}
+    if(T>3.8&&!ev.talked2){ev.talked2=true;say(b.m.head,'DEVOLVE. MEU. GATO.',2.4,1.4);}
+    if(T>5.4){ev.phase='boss';state='normal';document.body.classList.remove('cine');b.hittable=true;b.state='boss';b.spread=0;
+      $('bossBar').classList.add('on');$('bossName').textContent='⚠ BOSS SECRETO · '+b.name;$('bossLv').textContent='· NV '+lvl;objective('Derrote a VÓ NOCTURNA!');lockMouse(false);}}
+  // projéteis (novelos)
+  for(let i=secProj.length-1;i>=0;i--){const s=secProj[i];s.l-=dt;s.m.position.x+=s.vx*dt;s.m.position.z+=s.vz*dt;if(s.roll){s.m.rotation.x+=dt*8;}
+    const q=s.m.position;let gone=s.l<=0;if(Math.hypot(P.x-q.x,P.z-q.z)<s.r&&P.y<2){hurtPlayer(s.dmg,s.vx/13,s.vz/13);gone=true;}
+    for(const so of nearSolids(q.x,q.z))if(q.x>so.x1&&q.x<so.x2&&q.z>so.z1&&q.z<so.z2&&q.y<so.h){gone=true;break;}
+    if(gone){scene.remove(s.m);emit('dust',q.x,0.6,q.z,5,{spd:2,life:0.5,size:0.9});secProj.splice(i,1);}}
+  if(ev.phase==='boss'){$('bossFill').style.width=Math.max(0,b.hp/b.maxhp*100)+'%';$('bossHp').textContent=Math.max(0,Math.ceil(b.hp))+' / '+b.maxhp;
+    if(b.state==='down'&&!ev.won){ev.won=true;secClear(b);$('bossBar').classList.remove('on');shake=0.9;flashW();emit('flame',bp.x,4,bp.z,40,{spd:6,up:5,life:1.1,size:2.4});
+      say(b.m.head,'Cuida... bem... dele...',3,1.4);banner('BOSS SECRETO DERROTADO!');setTimeout(()=>{if(ev&&ev.secret)endEvent(300);},1600);}}
+}
 // ================= LOOP =================
 const vel=new THREE.Vector3();let t=0,dt=0;
 let airJumps=1,wallUp=0,state='normal',wallN=[0,1],wallTan=[1,0],wallT=0,wallCD=0,climbT=0,climbFrom=new THREE.Vector3(),climbTo=new THREE.Vector3(),pushX=0,pushZ=0,prevSpace=false,wallAmt=0,clingAmt=0,climbAmt=0;
@@ -3440,7 +3532,7 @@ addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updat
 <div id="updToast" style="display:none;position:fixed;left:50%;top:14px;transform:translateX(-50%);z-index:90;background:#ffd23a;color:#0a0a0a;font:14px 'Black Ops One',Impact,sans-serif;padding:.5em 1em;box-shadow:4px 4px 0 #c4161c;cursor:pointer">NOVA VERSÃO BAIXADA · TOQUE PRA ATUALIZAR</div>
 <script>
 // atualização automática do app: procura versão nova ao abrir e ao voltar pro app
-const APP_VERSION='2026.10.29-2319';
+const APP_VERSION='2026.10.29-2349';
 if('serviceWorker' in navigator){
   let reloading=false;
   navigator.serviceWorker.addEventListener('controllerchange',()=>{if(reloading)return;
