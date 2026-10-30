@@ -270,6 +270,8 @@
   body.mobile #bJump{width:84px;height:84px;right:calc(12px + env(safe-area-inset-right,0px));bottom:calc(14px + env(safe-area-inset-bottom,0px));font-size:14px}
   body.mobile #bLight{width:66px;height:66px;right:calc(104px + env(safe-area-inset-right,0px));bottom:calc(14px + env(safe-area-inset-bottom,0px));font-size:12px}
   body.mobile #bHeavy{width:66px;height:66px;right:calc(18px + env(safe-area-inset-right,0px));bottom:calc(106px + env(safe-area-inset-bottom,0px));font-size:12px}
+  body.mobile #bRope{width:58px;height:58px;right:calc(170px + env(safe-area-inset-right,0px));bottom:calc(92px + env(safe-area-inset-bottom,0px));font-size:10px;display:none}
+  body.mobile.hasRope #bRope{display:block}body.pc #bRope{display:none!important}
   body.mobile #bUlt{width:58px;height:58px;right:calc(98px + env(safe-area-inset-right,0px));bottom:calc(92px + env(safe-area-inset-bottom,0px));font-size:12px}
   body.mobile #bDodge{width:56px;height:56px;right:calc(180px + env(safe-area-inset-right,0px));bottom:calc(20px + env(safe-area-inset-bottom,0px));font-size:9px}
   body.mobile #bRun{width:52px;height:52px;right:calc(18px + env(safe-area-inset-right,0px));bottom:calc(182px + env(safe-area-inset-bottom,0px));font-size:9px}
@@ -595,7 +597,7 @@
     <div id="saveBox"></div>
     <button id="updBtn">UPDATE</button>
     <button id="sioStart">importar / exportar save</button>
-    <div id="appVer" style="margin-top:8px;font-size:11px;opacity:.55">versão 2026.10.30-0203</div>
+    <div id="appVer" style="margin-top:8px;font-size:11px;opacity:.55">versão 2026.10.30-0253</div>
   </div>
   <div id="how">PC: WASD · Shift corre · Espaço pula · Q chute · E chute forte · F ultimate · mouse gira a câmera &nbsp;|&nbsp; Celular: joystick na esquerda, botões na direita</div>
   <div class="grain"></div>
@@ -611,6 +613,7 @@
 <button class="btn" id="bLight">CHUTE</button>
 <button class="btn" id="bHeavy">FORTE</button>
 <button class="btn" id="bUlt">ULT</button>
+<button class="btn" id="bRope">CORDA</button>
 <canvas id="mini" width="300" height="300"></canvas>
 <div id="ultBox"><span id="ultPips"><i></i><i></i><i></i><i></i></span><span class="lbl">INK OVERDRIVE</span><span class="ready">INK OVERDRIVE PRONTO · F</span><div id="ultBar"><div id="ultFill"></div></div></div>
 <div class="lb" id="lbT"></div><div class="lb" id="lbB"></div>
@@ -817,6 +820,7 @@
     <h3>UPDATE</h3>
     <div class="updList">
       <section><h4>🆕 ESTA VERSÃO</h4><ul>
+        <li><b>Novo golpe: CORDA DO CÉU</b> (Skills › Golpes). No ar ou correndo na parede, segure o botão direito (ou G / botão CORDA no celular) pra se balançar; soltou, é lançado pra frente.</li>
         <li><b>Salão:</b> o balão da Kika some depois da fala e o espelho ficou bem maior no celular.</li>
         <li><b>Salão:</b> novo corte CARECA (no lugar do Spike Comum), Chanel e Longo sem franja repaginados, e voltar pro padrão agora devolve os espinhos.</li>
         <li><b>Salão:</b> cortes sem franja e moicanos corrigidos; zoom no espelho (barrinha, rodinha do mouse ou pinça no celular).</li>
@@ -1796,13 +1800,15 @@ const keys={};let dance=0,onGround=true,runToggle=false,jumpReq=false,atkReq=0,u
 addEventListener('keydown',e=>{keys[e.code]=true;if(e.code==='Space')e.preventDefault();if(e.code==='KeyR'&&onGround)dance=4;if(!e.repeat){if(e.code==='KeyQ')atkReq=1;if(e.code==='KeyE'){if(nearSalon&&!shopOpen)openSalon();else if(nearResto&&!shopOpen)openResto();else if(nearShop&&!shopOpen)(nearShop.kind==='cloth'?openCloth():openShop());else if(!shopOpen)atkReq=2;}if(e.code==='KeyF')ultReq=true;}});
 addEventListener('keyup',e=>keys[e.code]=false);
 addEventListener('contextmenu',e=>e.preventDefault());
+addEventListener('pointerup',e=>{if(e.pointerType==='mouse'&&e.button===2)ropeHold=false;});addEventListener('mouseup',e=>{if(e.button===2)ropeHold=false;});
+addEventListener('keydown',e=>{if(e.code==='KeyG'&&!e.repeat){ropeHold=true;ropeReqT=0.25;}});addEventListener('keyup',e=>{if(e.code==='KeyG')ropeHold=false;});
 let faceLock=false,moveYaw=0,yaw=0,pitch=0.3,dist=7,SHOULDER=1.35,sens=1,paused=false,lockOK=true,silentUnlock=false,lx=0,ly=0,mouseDrag=false;
 const cv=renderer.domElement;
 const joyBase=document.getElementById('joyBase'),joyKnob=document.getElementById('joyKnob'),hint=document.getElementById('hint');
 let joy={x:0,y:0},joyId=null,camId=null,jcx=0,jcy=0,clx=0,cly=0;
 const JR=90;
 cv.addEventListener('pointerdown',e=>{
-  if(e.pointerType==='mouse'){if(ML.locked||ML.broken){if(e.button===0&&gameActive())dodgeReq=true;}else lockMouse(true);return;}
+  if(e.pointerType==='mouse'){if(ML.locked||ML.broken){if(e.button===0&&gameActive())dodgeReq=true;if(e.button===2&&gameActive()){ropeHold=true;ropeReqT=0.25;}}else lockMouse(true);return;}
   cv.setPointerCapture(e.pointerId);
   if(e.clientX<innerWidth*0.5&&joyId===null){
     joyId=e.pointerId;jcx=e.clientX;jcy=e.clientY;
@@ -1828,7 +1834,7 @@ function btn(id,fn){const b=document.getElementById(id);b.addEventListener('poin
 btn('bJump',()=>jumpReq=true);
 btn('bRun',b=>{runToggle=!runToggle;b.classList.toggle('on',runToggle);});
 btn('bPose',()=>startEmote(Math.random()<0.5?'67':'jamal'));
-btn('bPause',()=>setPause(true));btn('bInv',()=>openInv());btn('bDodge',()=>dodgeReq=true);btn('bShop',()=>{if(nearSalon)openSalon();else if(nearResto)openResto();else if(nearShop)(nearShop.kind==='cloth'?openCloth():openShop());});btn('bLight',()=>atkReq=1);btn('bHeavy',()=>{atkReq=2;heavyHold=true;});['pointerup','pointercancel','pointerleave'].forEach(ev2=>document.getElementById('bHeavy').addEventListener(ev2,()=>heavyHold=false));btn('bUlt',()=>ultReq=true);
+btn('bPause',()=>setPause(true));btn('bInv',()=>openInv());btn('bDodge',()=>dodgeReq=true);btn('bShop',()=>{if(nearSalon)openSalon();else if(nearResto)openResto();else if(nearShop)(nearShop.kind==='cloth'?openCloth():openShop());});btn('bLight',()=>atkReq=1);btn('bHeavy',()=>{atkReq=2;heavyHold=true;});['pointerup','pointercancel','pointerleave'].forEach(ev2=>document.getElementById('bHeavy').addEventListener(ev2,()=>heavyHold=false));btn('bUlt',()=>ultReq=true);btn('bRope',()=>{ropeHold=true;ropeReqT=0.25;});['pointerup','pointercancel','pointerleave'].forEach(ev2=>document.getElementById('bRope').addEventListener(ev2,()=>ropeHold=false));
 
 // ================= COMBATE =================
 let atk=0,atkT=0,atkDur=0,atkSide=1,atkHit=false,lightAlt=1,hitStop=0,ultCharge=0,ultT=0,ultHitDone=false;
@@ -2065,6 +2071,7 @@ function updateDummies(){
 }
 // pose dos golpes e da ultimate (sobrepõe a animação base)
 function attackPose(){
+  if(state==='swing'){swingPose();return;}
   if(salonOpen){hips.position.y=1.42;hips.rotation.set(0,0,0);body.rotation.set(0,0,0);legs.forEach(L=>{L.thigh.rotation.set(-1.45,0,L.side*0.1);L.knee.rotation.set(1.35,0,0);L.ankle.rotation.set(0.1,0,0);});
     spine.rotation.set(-0.08,0,0);arms.forEach(A=>{A.sh.rotation.set(-0.55,0,A.side*0.35);A.el.rotation.set(-0.9,0,0);A.wr.rotation.set(0,0,0);});neck.rotation.set(Math.sin(t*1.2)*0.05,Math.sin(t*0.7)*0.15,0);jaw.rotation.x=0.1;return;}
   if(riding&&state!=='dead'){let dr=player.rotation.y-(window._pry??player.rotation.y);dr=Math.atan2(Math.sin(dr),Math.cos(dr));window._pry=player.rotation.y;turnLean=ease(turnLean,THREE.MathUtils.clamp(dr/Math.max(dt,0.001)*0.4,-1,1),6);hips.position.y=1.32;hips.rotation.set(0,0,0);body.rotation.set(0,0,-turnLean*0.18);
@@ -2857,7 +2864,8 @@ const TREE={
        {id:'m4',n:'VIDA II',ic:'❤',c:2,d:'+25 de vida máxima'},{id:'m5',n:'RESISTÊNCIA II',ic:'⛨',c:3,d:'−10% de dano recebido'},{id:'m6',n:'FORÇA II',ic:'✊',c:3,d:'+15% de dano em tudo'}],
   gol:[{id:'slam',n:'QUEDA DA LÁPIDE',ic:'⤓',c:1,k:'PULO + ATAQUE',d:'Despenca do céu e esmaga o chão, acertando todo mundo em volta.'},
        {id:'dash',n:'RASGO DE RUA',ic:'➤',c:2,k:'ESQUIVA + ATAQUE FRACO',d:'Dispara pra frente atravessando e acertando quem estiver no caminho.'},
-       {id:'tele',n:'SOMBRA DO BECO',ic:'◐',c:3,k:'ESQUIVA + ATAQUE FORTE',d:'Some e reaparece atrás do inimigo mais próximo com um soco.'}],
+       {id:'tele',n:'SOMBRA DO BECO',ic:'◐',c:3,k:'ESQUIVA + ATAQUE FORTE',d:'Some e reaparece atrás do inimigo mais próximo com um soco.'},
+       {id:'rope',n:'CORDA DO CÉU',ic:'➶',c:3,k:'SEGURE O BOTÃO DIREITO NO AR OU NA PAREDE',d:'Joga uma corda pro céu e balança. Soltou, é lançado pra frente: dá pra atravessar a cidade sem tocar no chão.'}],
   est:[{id:'fire',c:1,d:'Os golpes queimam o inimigo por alguns segundos.'},{id:'water',c:2,d:'Deixa o inimigo encharcado: lento pra andar e pra bater.'},
        {id:'wind',c:3,d:'4 golpes seguidos jogam o inimigo pro alto, e ele se esborracha no chão.'},{id:'earth',c:4,d:'Inimigo com pouca vida é finalizado por uma estaca que brota do chão.'}]
 };
@@ -3797,6 +3805,40 @@ $('hvCanvas').addEventListener('wheel',e=>{e.preventDefault();const z=$('hZoom')
 function drawSalon(tr,W2){for(const c of chunks.values())if(c.salon){const p=tr(c.salon.x,c.salon.z);if(p[0]<0||p[0]>W2||p[1]<0||p[1]>W2)continue;const r=W2*0.05;
   mctx.fillStyle='#ff4fb8';mctx.strokeStyle='#0a0a0a';mctx.lineWidth=2;mctx.beginPath();mctx.arc(p[0],p[1],r,0,7);mctx.fill();mctx.stroke();
   mctx.fillStyle='#0a0a0a';mctx.font=`900 ${W2*0.07|0}px sans-serif`;mctx.textAlign='center';mctx.textBaseline='middle';mctx.fillText('✂',p[0],p[1]+1);}}
+// ================= CORDA DO CÉU (balanço) =================
+let ropeHold=false,ropeReqT=0,ropeCD=0,ropeT=0,ropeL=0;const ropeA=new THREE.Vector3(),rsv=new THREE.Vector3(),_rh=new THREE.Vector3(),_rd=new THREE.Vector3();
+const ROPEM=new THREE.MeshStandardMaterial({color:0x1a1a1e,emissive:0x2a0a10,roughness:0.6});
+const ropeMesh=new THREE.Mesh(new THREE.CylinderGeometry(0.045,0.045,1,6),ROPEM);ropeMesh.visible=false;scene.add(ropeMesh);
+const ropeHook=new THREE.Group();scene.add(ropeHook);ropeHook.visible=false;
+{const h=new THREE.Mesh(new THREE.TorusGeometry(0.35,0.08,6,12),new THREE.MeshBasicMaterial({color:0xefece4}));ropeHook.add(h);halo(ropeHook,0,0,0,2.2,2.2,0xc4161c,0.6);}
+function tryRope(){const P=player.position;
+  if(!skills.rope||riding||shopOpen||ropeCD>0||playerDead)return false;
+  if(!((state==='normal'&&!onGround)||state==='wallrun'||state==='cling'))return false;
+  const fa=(state==='normal'&&curSpeed>2)?player.rotation.y:yaw+Math.PI,fx=Math.sin(fa),fz=Math.cos(fa);
+  ropeA.set(P.x+fx*9,P.y+22,P.z+fz*9);ropeL=ropeA.distanceTo(P);if(ropeA.y-ropeL<1.3)ropeL=ropeA.y-1.3;
+  const hs=state==='normal'?Math.max(curSpeed,10):16;rsv.set(fx*hs+pushX,Math.max(vel.y,-6),fz*hs+pushZ);
+  state='swing';ropeT=0;pushX=pushZ=0;curSpeed=0;flip=0;dance=0;wallCD=0.4;SFX.whip();shake=Math.max(shake,0.12);return true;}
+function swingUpdate(P,mvx,mvz,moving){ropeT+=dt;
+  rsv.y-=24*dt;if(moving){rsv.x+=mvx*12*dt;rsv.z+=mvz*12*dt;}
+  const hsp=Math.hypot(rsv.x,rsv.z);if(hsp>1){rsv.x+=rsv.x/hsp*5*dt;rsv.z+=rsv.z/hsp*5*dt;}
+  if(rsv.length()>46)rsv.setLength(46);
+  P.addScaledVector(rsv,dt);
+  _rd.subVectors(P,ropeA);const len=_rd.length();if(len>ropeL){_rd.multiplyScalar(1/len);P.copy(ropeA).addScaledVector(_rd,ropeL);const vr=rsv.dot(_rd);if(vr>0)rsv.addScaledVector(_rd,-vr);}
+  const before=P.x+P.z;collide(P,nearSolids(P.x,P.z));if(Math.abs(P.x+P.z-before)>0.001){rsv.x*=0.5;rsv.z*=0.5;}
+  if(hsp>2)turnTo(Math.atan2(rsv.x,rsv.z),10);
+  if(!ropeHold&&ropeT>0.15)ropeRelease();}
+function ropeRelease(){state='normal';onGround=false;vel.y=Math.max(rsv.y,0)+6;pushX=rsv.x*1.1;pushZ=rsv.z*1.1;curSpeed=0;
+  if(Math.hypot(rsv.x,rsv.z)>2)player.rotation.y=Math.atan2(rsv.x,rsv.z);flip=1;flipA=0;ropeCD=0.15;airJumps=Math.max(airJumps,1);SFX.whoosh(true);puff(4,1);}
+function ropeTick(){ropeCD=Math.max(0,ropeCD-dt);if(ropeReqT>0){ropeReqT-=dt;if(tryRope())ropeReqT=0;}
+  document.body.classList.toggle('hasRope',!!skills.rope);
+  if(state==='swing'){arms[1].wr.getWorldPosition(_rh);const k=Math.min(1,ropeT/0.12);_rd.copy(_rh).lerp(ropeA,k);
+    const L=_rh.distanceTo(_rd);ropeMesh.visible=true;ropeMesh.position.copy(_rh).add(_rd).multiplyScalar(0.5);ropeMesh.scale.set(1,L,1);
+    ropeMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),_rd.clone().sub(_rh).normalize());ropeHook.visible=k>=1;ropeHook.position.copy(ropeA);ropeHook.rotation.y+=dt*3;}
+  else{ropeMesh.visible=false;ropeHook.visible=false;}}
+function swingPose(){const up=THREE.MathUtils.clamp(rsv.y/20,-1,1);
+  arms[1].sh.rotation.set(-2.95,0,0.15);arms[1].el.rotation.set(-0.1,0,0);arms[0].sh.rotation.set(-0.4+up*0.4,0,-1.1);arms[0].el.rotation.set(-0.6,0,0);
+  legs.forEach((L,i)=>{L.thigh.rotation.set(-0.5-up*0.5+(i?0.35:-0.1),0,L.side*0.12);L.knee.rotation.set(0.9+(i?0.4:0),0,0);});
+  spine.rotation.set(0.1-up*0.25,0,0);hips.position.y=1.04;neck.rotation.set(-0.25,0,0);jaw.rotation.x=0.35;}
 // ================= LOOP =================
 const vel=new THREE.Vector3();let t=0,dt=0;
 let airJumps=1,wallUp=0,state='normal',wallN=[0,1],wallTan=[1,0],wallT=0,wallCD=0,climbT=0,climbFrom=new THREE.Vector3(),climbTo=new THREE.Vector3(),pushX=0,pushZ=0,prevSpace=false,wallAmt=0,clingAmt=0,climbAmt=0;
@@ -3933,6 +3975,7 @@ function loop(){
       wallCD=0.25;flip=1;flipA=0;squash=0.3;puff(4,1.5);
     }else if(w&&w.s.h-P.y<1.8&&(up>0.2||vel.y>0)){startClimb(w);}
     else if(!w||!moving||(tired&&vel.y<-4)){state=w&&!moving?'cling':'normal';wallT=0;wallCD=0.3;}
+  }else if(state==='swing'){swingUpdate(P,mvx,mvz,moving);
   }else if(state==='bcine'){vel.y=0;
   }else if(state==='ult'){ultUpdate(P);
   }else if(state==='dead'){vel.y-=22*dt;P.y+=vel.y*dt;
@@ -3971,7 +4014,7 @@ function loop(){
     collide(P,sols);
   }
   const wr=state==='wallrun';
-  phase+=dt*(moving||wr?lerp(7.5,17,runAmt):curSpeed*1.7);if(AUD.ctx)stepSfx();hairSway();
+  phase+=dt*(moving||wr?lerp(7.5,17,runAmt):curSpeed*1.7);if(AUD.ctx)stepSfx();hairSway();ropeTick();
   moveAmt=ease(moveAmt,(moving&&state!=='cling')||wr?1:0,8);
   runAmt=ease(runAmt,(running&&state==='normal')||wr?Math.min(1,curSpeed/14):0,5);
   if(wr){const lx=Math.cos(player.rotation.y),lz=-Math.sin(player.rotation.y);bank=ease(bank,-(wallN[0]*lx+wallN[1]*lz)*0.6*(1-wallUp),10);}
@@ -4106,7 +4149,7 @@ addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updat
 <div id="updToast" style="display:none;position:fixed;left:50%;top:14px;transform:translateX(-50%);z-index:90;background:#ffd23a;color:#0a0a0a;font:14px 'Black Ops One',Impact,sans-serif;padding:.5em 1em;box-shadow:4px 4px 0 #c4161c;cursor:pointer">NOVA VERSÃO BAIXADA · TOQUE PRA ATUALIZAR</div>
 <script>
 // atualização automática do app: procura versão nova ao abrir e ao voltar pro app
-const APP_VERSION='2026.10.30-0203';
+const APP_VERSION='2026.10.30-0253';
 if('serviceWorker' in navigator){
   let reloading=false;
   navigator.serviceWorker.addEventListener('controllerchange',()=>{if(reloading)return;
