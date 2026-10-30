@@ -456,11 +456,18 @@
   .hMirror{position:relative;flex:1;min-height:0;border:10px solid #d4a017;border-radius:46% 46% 12px 12px;background:radial-gradient(circle at 50% 35%,#4a1a3a,#12060e 80%);box-shadow:0 0 30px #ff4fb855,inset 0 0 40px #000;overflow:hidden}
   #hvCanvas{width:100%;height:100%;display:block}
   .hTalk{position:absolute;top:8px;left:50%;transform:translateX(-50%);z-index:2;background:#efece4;color:#0a0a0a;padding:6px 12px;font-size:14px;max-width:90%;text-align:center;box-shadow:3px 3px 0 #ff4fb8}
-  .hTalk.pop{animation:rIn .3s}
+  .hTalk.pop{animation:rIn .3s}.hTalk{transition:opacity .4s,transform .4s}.hTalk.gone{opacity:0;transform:translate(-50%,-12px);pointer-events:none}
   .hRotL{display:flex;align-items:center;gap:8px;font-family:'Black Ops One',sans-serif;font-size:13px;background:#0a0a0a;padding:6px 10px;border:2px solid #ff4fb8}.hRotL input{flex:1;accent-color:#ff4fb8}
   .hDet{background:#0a0a0a;border:3px solid #efece4;padding:8px 12px;box-shadow:5px 5px 0 #ff4fb8}.hDet h3{margin:0;font-family:'Black Ops One',sans-serif;font-weight:400}.hDet p{margin:4px 0 8px;font-size:13px}
   #hBuy{width:100%;font-family:'Black Ops One',sans-serif;font-size:16px;padding:.5em;background:#ff4fb8;color:#0a0a0a;border:3px solid #efece4;cursor:pointer}#hBuy:disabled{opacity:.5;cursor:default}
-  @media (max-width:760px){#hshop .hIn{grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr) minmax(0,1.1fr)}.hTitle{grid-column:1}.hRight{order:-1}}
+  .hCtl{display:flex;flex-direction:column;gap:6px}
+  .hRight,.hLeft{min-width:0}.hRotL input{min-width:0;width:100%}
+  @media (max-width:760px){.hTitle{order:-2}#hshop .hIn{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1.5fr) minmax(0,1fr);gap:6px;padding:calc(6px + env(safe-area-inset-top,0px)) 8px 8px}.hTitle{grid-column:1;font-size:24px}.hRight{order:-1}
+    .hCtl{flex-direction:row}.hCtl label{flex:1;min-width:0}.hDet p{display:none}.hcard svg{width:56px;height:56px}#hGrid{grid-template-columns:repeat(auto-fill,minmax(98px,1fr))}}
+  @media (max-height:560px){#hshop .hIn{grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:6px;padding:calc(4px + env(safe-area-inset-top,0px)) calc(8px + env(safe-area-inset-right,0px)) 6px calc(8px + env(safe-area-inset-left,0px))}
+    .hTitle{display:none}#hshop .hIn{grid-template-rows:minmax(0,1fr)}.hLeft,.hRight{grid-row:1}.hCtl{flex-direction:row}.hCtl label{flex:1;min-width:0;padding:2px 8px;font-size:11px}.hDet{padding:4px 8px;box-shadow:3px 3px 0 #ff4fb8}.hDet p,.hDet .rtxt{display:none}.hDet h3{font-size:14px}
+    #hBuy{font-size:13px;padding:.3em}.hMirror{border-width:5px;border-radius:30% 30% 8px 8px}.hRight{gap:4px}.hcard svg{width:48px;height:48px}.hcard{padding:4px}.hcard b{font-size:10px}
+    #hGrid{grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:5px;padding:6px}.hTabs button{padding:.35em;font-size:13px}.hFoot{padding:4px 8px}.hTalk{font-size:12px;padding:3px 8px}}
   #hurt{position:fixed;inset:0;pointer-events:none;z-index:24;box-shadow:inset 0 0 140px 30px #c4161c;opacity:0}
   #hurt.go{animation:hurt .45s ease-out}
   @keyframes hurt{0%{opacity:1}100%{opacity:0}}
@@ -588,7 +595,7 @@
     <div id="saveBox"></div>
     <button id="updBtn">UPDATE</button>
     <button id="sioStart">importar / exportar save</button>
-    <div id="appVer" style="margin-top:8px;font-size:11px;opacity:.55">versão 2026.10.30-0149</div>
+    <div id="appVer" style="margin-top:8px;font-size:11px;opacity:.55">versão 2026.10.30-0203</div>
   </div>
   <div id="how">PC: WASD · Shift corre · Espaço pula · Q chute · E chute forte · F ultimate · mouse gira a câmera &nbsp;|&nbsp; Celular: joystick na esquerda, botões na direita</div>
   <div class="grain"></div>
@@ -634,7 +641,7 @@
     <div id="hCols"><b>COR DO CABELO</b><div id="hPal1" class="pal"></div><b>SEGUNDA COR <small>(listras das Chiquinhas Listradas)</small></b><div id="hPal2" class="pal"></div></div>
     <div class="hFoot"><span id="hCoins">☠ 0</span><button id="hClose">SAIR</button></div></div>
   <div class="hRight"><div class="hTalk" id="hTalk"></div><div class="hMirror"><canvas id="hvCanvas"></canvas></div>
-    <label class="hRotL">↺ GIRAR <input type="range" id="hRot" min="-180" max="180" value="0"> ↻</label><label class="hRotL">🔍 ZOOM <input type="range" id="hZoom" min="2.4" max="10" step="0.1" value="4.6"> 🔭</label><div class="hDet" id="hDet"></div></div>
+    <div class="hCtl"><label class="hRotL">↺ GIRAR <input type="range" id="hRot" min="-180" max="180" value="0"> ↻</label><label class="hRotL">🔍 ZOOM <input type="range" id="hZoom" min="2.4" max="10" step="0.1" value="4.6"> 🔭</label></div><div class="hDet" id="hDet"></div></div>
 </div></div>
 <div id="shop" role="dialog" aria-label="Loja de armas">
   <div class="shopIn">
@@ -810,6 +817,7 @@
     <h3>UPDATE</h3>
     <div class="updList">
       <section><h4>🆕 ESTA VERSÃO</h4><ul>
+        <li><b>Salão:</b> o balão da Kika some depois da fala e o espelho ficou bem maior no celular.</li>
         <li><b>Salão:</b> novo corte CARECA (no lugar do Spike Comum), Chanel e Longo sem franja repaginados, e voltar pro padrão agora devolve os espinhos.</li>
         <li><b>Salão:</b> cortes sem franja e moicanos corrigidos; zoom no espelho (barrinha, rodinha do mouse ou pinça no celular).</li>
         <li><b>Salão da Kika:</b> novo salão (✂ no mapa) com 12 cortes por raridade e cores pro cabelo.</li>
@@ -3751,7 +3759,7 @@ function hairSVG(id){const c1='#'+hairC1.toString(16).padStart(6,'0'),c2='#'+hai
     h11:`<g stroke="#0a0a0a" stroke-width="2"><path d="M32 52 Q60 24 88 52Z" fill="${c1}"/><path d="M30 46 Q4 60 10 116 Q22 108 24 90 Q28 70 34 56Z" fill="${c1}"/><path d="M90 46 Q116 60 110 116 Q98 108 96 90 Q92 70 86 56Z" fill="${c1}"/></g>
       <g fill="${c2}"><path d="M14 70 h18 v8 h-19z M11 92 h15 v8 h-15z M88 70 h18 v8 h-18z M94 92 h15 v8 h-15z"/></g><circle cx="31" cy="49" r="5" fill="#c4161c"/><circle cx="89" cy="49" r="5" fill="#c4161c"/>`};
   const back=(id==='h10')?H[id]:'';const front=(id==='h10')?'':H[id];return `<svg viewBox="0 0 120 120">${back}${sk}${front}</svg>`;}
-function kikaSay(t2){speakShop(t2,1.3,300);const e=$('hTalk');e.textContent=t2;e.classList.remove('pop');void e.offsetWidth;e.classList.add('pop');}
+function kikaSay(t2){speakShop(t2,1.3,300);const e=$('hTalk');e.textContent=t2;e.classList.remove('pop','gone');void e.offsetWidth;e.classList.add('pop');clearTimeout(e._ht);e._ht=setTimeout(()=>e.classList.add('gone'),1600+t2.length*55);}
 function renderSalon(){$('hCoins').textContent='☠ '+coins;
   $('hGrid').innerHTML=HAIR_ORDER.map(id=>{const h=HAIRS[id],own=hairOwn.includes(id),eq=hairEq===id;
     return `<button class="hcard ${h.rar?'rar-'+h.rar:''}${selH===id?' sel':''}" data-id="${id}">${h.rar?`<span class="rtag">${RARN[h.rar]}</span>`:''}${hairSVG(id)}<b>${h.name}</b><span class="tag">${eq?'EM USO':own?'SEU':'☠ '+h.price}</span></button>`;}).join('');
@@ -3777,7 +3785,7 @@ function openSalon(){SFX.shop();unlockSilent();shopOpen=true;salonOpen=true;selH
     a2(new THREE.CylinderGeometry(0.9,1.0,0.12,20),chr,0,0.06,0);a2(new THREE.CylinderGeometry(0.16,0.2,0.9,10),chr,0,0.55,0);a2(new THREE.BoxGeometry(1.5,0.3,1.4),red,0,1.1,0);
     a2(new THREE.BoxGeometry(1.5,1.8,0.3),red,0,2.05,-0.75);a2(new THREE.BoxGeometry(0.9,0.4,0.2),blk,0,3.1,-0.78);for(const sd of[-1,1]){a2(new THREE.BoxGeometry(0.22,0.18,1.3),red,sd*0.86,1.6,-0.05);a2(new THREE.BoxGeometry(0.08,0.4,0.08),chr,sd*0.86,1.35,0.45);}
     a2(new THREE.BoxGeometry(1.1,0.08,0.5),chr,0,0.35,1.0);hvScene.add(hvChair);}
-  hvScene.add(player);document.body.classList.add('inshop');$('hshop').classList.add('on');$('hRot').value=0;$('hZoom').value=4.6;renderSalon();setTimeout(hvSize,30);
+  hvScene.add(player);document.body.classList.add('inshop');$('hshop').classList.add('on');$('hRot').value=0;$('hZoom').value=(IS_MOBILE||innerHeight<560)?3.1:4.6;renderSalon();setTimeout(hvSize,30);
   kikaSay(['Senta aí, caveira! Bora mudar esse visual.','Oi, gato! Corte, cor ou os dois?','Prometo não encostar nos espinhos. Muito.'][Math.random()*3|0]);hvLoop();}
 function closeSalon(){if(!salonOpen)return;salonOpen=false;$('hshop').classList.remove('on');scene.add(player);selH=null;applyHair();shopOpen=false;document.body.classList.remove('inshop');writeSave(false);lockMouse(true);}
 $('hClose').addEventListener('click',closeSalon);
@@ -4098,7 +4106,7 @@ addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updat
 <div id="updToast" style="display:none;position:fixed;left:50%;top:14px;transform:translateX(-50%);z-index:90;background:#ffd23a;color:#0a0a0a;font:14px 'Black Ops One',Impact,sans-serif;padding:.5em 1em;box-shadow:4px 4px 0 #c4161c;cursor:pointer">NOVA VERSÃO BAIXADA · TOQUE PRA ATUALIZAR</div>
 <script>
 // atualização automática do app: procura versão nova ao abrir e ao voltar pro app
-const APP_VERSION='2026.10.30-0149';
+const APP_VERSION='2026.10.30-0203';
 if('serviceWorker' in navigator){
   let reloading=false;
   navigator.serviceWorker.addEventListener('controllerchange',()=>{if(reloading)return;
